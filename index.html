@@ -1,0 +1,1042 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>緋</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EA">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="緋">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@300;400;500&family=Martian+Mono:wght@300;400&display=swap">
+<style>
+/* 緋（對應「扉」）：記帳＋工作日誌的共同入口。她站在四道扉中間；扉＝大廳四面的門。
+   助理：大廳（問候、一則建議、四方の扉、跟她說）＋房間（直接內嵌記帳與工作日誌）。
+   米白木漏れ日、背景是呼吸的霧；青磁只給能點的主要動作；她的聲音用宋體，數字用等寬字。只做淺色（使用者指定）。 */
+:root{
+  --bg:#F4F1EA; --surf:#FBF9F4; --ink:#22251F; --soft:#4C5047; --mute:#6E7068; --line:#DCD7CB; --mark:rgba(34,37,31,.07);
+  --acc:#2F6B5F; --on-acc:#F5F3EC; --warn:#A4482E;
+  --hi:#B5452E; --on-hi:#FBF3EE; /* 緋：她的顏色，只用在她自己（角印、球、呼喚的小點），不給按鈕 */
+  --f-voice:"Noto Serif TC","PMingLiU",serif; --f-ui:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif; --f-num:"Martian Mono",ui-monospace,monospace;
+  --calm:cubic-bezier(.4,0,.2,1); --in:cubic-bezier(.4,0,1,1);
+  --r-lg:28px; --r-sm:16px; --lift:0 24px 60px -32px rgba(34,37,31,.45);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 var(--f-ui);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overflow-x:clip}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+html,body{overscroll-behavior:none}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+input,textarea{-webkit-user-select:text;user-select:text}
+.stone:active,.door:active{background:var(--surf);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.grab{display:none}
+@media (max-width:1023px){.grab{display:block;width:40px;height:5px;border-radius:5px;background:var(--line);margin:10px auto -14px;flex:none}}
+.edge-back{position:absolute;left:0;top:0;bottom:0;width:18px;z-index:3;touch-action:none}
+@media (min-width:1024px){.edge-back{display:none}}
+::view-transition-group(roomtitle){animation-duration:520ms;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+::view-transition-old(root),::view-transition-new(root){animation-duration:380ms;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:10px}
+.num{font-family:var(--f-num);font-weight:300;font-variant-numeric:tabular-nums}
+.soft{color:var(--soft)}
+#fog{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+@keyframes surface{from{opacity:0;transform:translateY(14px);filter:blur(6px)}}
+@keyframes sink{to{opacity:0;transform:translateY(18px) scale(.97);filter:blur(4px)}}
+@keyframes fade{from{opacity:0}}
+.surface{animation:surface 640ms var(--calm) both}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:999px;font-size:15px;font-weight:500;white-space:nowrap;transition:transform 180ms var(--calm),background-color 180ms var(--calm)}
+.btn:active{transform:scale(.96)}
+.btn.pri{background:var(--acc);color:var(--on-acc)}
+.btn.ghost{background:color-mix(in srgb,var(--surf) 85%,transparent);box-shadow:inset 0 0 0 1px var(--line)}
+.btn.text{padding:0 12px;color:var(--soft)}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 12px;border-radius:999px;font-size:13px;box-shadow:inset 0 0 0 1px var(--line);color:var(--soft);white-space:nowrap;background:var(--surf)}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pills button{min-height:36px;padding:0 14px;border-radius:999px;font-size:14px;box-shadow:inset 0 0 0 1px var(--line);background:var(--bg)}
+.pills button[aria-pressed="true"]{background:var(--ink);color:var(--bg);box-shadow:none}
+
+/* ---------- 大廳（手機：飛び石；電腦：四方の扉＋球） ---------- */
+.shell{position:relative;z-index:1;min-height:100%}
+.hall{min-height:100%;display:flex;flex-direction:column;max-width:440px;margin:0 auto;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.top{display:flex;justify-content:space-between;align-items:center;padding-top:calc(22px + env(safe-area-inset-top,0px));font-size:14px;color:var(--soft);letter-spacing:.06em}
+.top .st{display:inline-flex;align-items:center;gap:8px}
+.top .st i{width:6px;height:6px;border-radius:50%;background:var(--mute)}
+.top .st.on i{background:var(--ink)}
+.top .st.sync i{animation:breathe 1.6s ease-in-out infinite}
+@keyframes breathe{50%{opacity:.25}}
+.voice{padding:64px 0 6px;display:flex;flex-direction:column;gap:12px}
+.voice h1{margin:0;font:300 36px/1.28 var(--f-voice);text-wrap:balance}
+.voice p{margin:0;font:400 17px/1.85 var(--f-voice);color:var(--soft)}
+.ask{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px}
+.ask .q{font:400 19px/1.6 var(--f-voice);flex:1 0 100%}
+.stones{position:relative;flex:1;min-height:300px;margin:18px 0 8px}
+.who-mark{display:inline-flex;align-items:center;gap:10px}
+.seal{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:6px;background:var(--hi);color:var(--on-hi);font:500 15px/1 var(--f-voice);letter-spacing:0}
+.mon{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.stone{position:absolute;display:grid;place-items:center;width:76px;height:76px;border-radius:50%;background:color-mix(in srgb,var(--surf) 90%,transparent);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink);will-change:transform}
+.stone .mon{width:32px;height:32px}
+.stone.lit::after,.door.lit::after{content:"";position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--hi);box-shadow:0 0 0 3px var(--bg)}
+.stone.quiet,.door.quiet{opacity:.55}
+.dock{margin-top:auto;padding-top:16px;display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;min-height:0}
+.say{display:flex;align-items:center;gap:6px;background:color-mix(in srgb,var(--surf) 92%,transparent);border-radius:999px;padding:5px 5px 5px 20px;box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow 180ms}
+.say:focus-within{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.say .who{font:400 14px var(--f-voice);color:var(--soft);white-space:nowrap}
+.say input{flex:1;min-width:0;border:0;background:transparent;font-size:17px;height:46px;outline:0}
+.send{width:46px;height:46px;padding:0}
+.send svg{width:19px;height:19px}
+.frame,.orb-slot{display:none}
+.hall{position:relative}
+.orb-m{position:absolute;right:6px;top:calc(70px + env(safe-area-inset-top,0px));width:112px;height:112px;pointer-events:none}
+.voice h1{padding-right:100px}
+@media (min-width:1024px){
+  .hall{max-width:none;margin:0;padding:0 clamp(230px,17vw,300px);min-height:100vh;display:grid;grid-template-columns:minmax(0,min(520px,34vw));align-content:center}
+  .top{position:fixed;top:44px;left:52px;right:52px;padding:0;z-index:3;color:var(--ink)}
+  .voice{padding:0 0 10px}.voice h1{font-size:clamp(44px,4.2vw,60px)}.voice p{font-size:19px}.ask .q{font-size:21px}
+  .stones,.orb-m{display:none}
+  .voice h1{padding-right:0}
+  .dock{padding-top:34px}
+  .frame{display:block;position:fixed;inset:44px;pointer-events:none;z-index:2}
+  .edge{position:absolute;display:flex;align-items:center;gap:18px}
+  .edge .ln{flex:1;background:rgba(34,37,31,.16)}
+  .edge.h{left:0;right:0;height:0}.edge.h .ln{height:1px}.edge.t{top:0}.edge.b{bottom:0}
+  .edge.v{top:0;bottom:0;width:0;flex-direction:column;align-items:flex-start}.edge.v .ln{width:1px}.edge.l{left:0}.edge.r{right:0;align-items:flex-end}
+  .door{position:relative;pointer-events:auto;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink);transition:color 180ms var(--calm),box-shadow 420ms var(--calm),transform 420ms var(--calm)}
+  .door:not(.quiet):hover,.door:not(.quiet):focus-visible{color:var(--acc);box-shadow:inset 0 0 0 1.5px var(--acc);transform:scale(1.08)}
+  .orb-slot{display:block;position:fixed;right:clamp(240px,18vw,310px);width:min(400px,26vw);top:50%;height:clamp(260px,42vh,380px);transform:translateY(-50%);z-index:1;pointer-events:none}
+}
+
+/* ---------- 房間：上面一條回大廳，下面是整個 App ---------- */
+.room{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;background:var(--bg);visibility:hidden}
+.room.on{visibility:visible}
+.room.enter{animation:roomIn 560ms var(--calm) both}
+.room.exit{animation:roomOut 260ms var(--in) forwards}
+@keyframes roomIn{from{opacity:0;transform:translate(var(--dx,0),var(--dy,0));filter:blur(10px)}}
+@keyframes roomOut{to{opacity:0;transform:translate(var(--dx,0),var(--dy,0));filter:blur(10px)}}
+.rbar{flex:none;display:flex;align-items:center;gap:12px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;border-bottom:1px solid var(--line);background:var(--bg)}
+.back{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px 0 10px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);background:var(--surf);font-size:14px}
+.back svg{width:17px;height:17px}
+.rbar b{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--line)}
+.rbar b .mon{width:24px;height:24px}
+.rbar .soft{margin-left:auto;font-size:12px}
+.room iframe{flex:1;width:100%;border:0;background:var(--bg)}
+.away{visibility:hidden}
+.leave{animation:hallOut 360ms var(--in) forwards}
+.back-in{animation:hallIn 560ms var(--calm) both}
+@keyframes hallOut{to{opacity:0;transform:translate(var(--dx,0),var(--dy,0)) scale(.985);filter:blur(10px)}}
+@keyframes hallIn{from{opacity:0;transform:translate(var(--dx,0),var(--dy,0)) scale(.985);filter:blur(10px)}}
+
+/* ---------- 面板（確認、金鑰） ---------- */
+.scrim{position:fixed;inset:0;z-index:20;background:rgba(244,241,234,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:fade 420ms var(--calm)}
+.sheet{position:fixed;inset:auto 0 0 0;z-index:21;display:flex;justify-content:center;pointer-events:none;padding:0 10px calc(10px + env(safe-area-inset-bottom,0px))}
+.panel{pointer-events:auto;width:100%;max-width:540px;background:var(--surf);border-radius:var(--r-lg);box-shadow:inset 0 0 0 1px var(--line),var(--lift);max-height:88vh;display:flex;flex-direction:column;animation:surface 420ms var(--calm)}
+.panel.out{animation:sink 180ms var(--in) forwards}
+.pbody{overflow:auto;padding:26px 22px 14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font:300 27px/1.3 var(--f-voice)}
+.quote{margin:-6px 0 0;font-size:14px;color:var(--soft)}
+.pacts{display:flex;gap:8px;padding:10px 18px 18px;flex-wrap:wrap}
+.pacts .grow{flex:1}
+.rows{display:flex;flex-direction:column;gap:8px}
+.crow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 18px;border-radius:20px;background:var(--bg)}
+.crow .k{display:block;font-size:11px;color:var(--soft);letter-spacing:.1em}
+.crow .w{display:block;font-weight:500}
+.crow .s{display:block;font-size:13px;color:var(--soft)}
+.crow .a{font:300 19px var(--f-num)}
+.crow .pick{grid-column:1/-1;margin-top:6px}
+.crow .pick .g{font-size:12px;color:var(--soft);align-self:center;min-width:4.5em}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span{font-size:13px;color:var(--soft);letter-spacing:.06em}
+.inp{width:100%;min-height:46px;border:0;border-radius:var(--r-sm);background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);padding:10px 16px;font-size:16px;outline:0}
+.inp:focus{box-shadow:inset 0 0 0 1.5px var(--ink)}
+textarea.inp{min-height:84px;resize:vertical;font-family:var(--f-num);font-size:14px}
+.commit{position:relative;overflow:hidden}
+.commit .cdl{position:absolute;inset:0;background:rgba(245,243,236,.18);transform-origin:left;transform:scaleX(calc(1 - var(--p,0)));pointer-events:none}
+@media (min-width:1024px){.sheet{inset:0;padding:28px;align-items:center}.sheet .panel{width:560px}}
+
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:12px;max-width:min(560px,calc(100% - 24px));padding:10px 10px 10px 20px;border-radius:999px;background:var(--ink);color:var(--bg);font:400 15px var(--f-voice);animation:surface 420ms var(--calm)}
+.toast:not(:has(.btn)){padding-right:20px}
+.toast .btn{min-height:36px;background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px}
+.toast.out{animation:sink 300ms var(--in) forwards}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="fog" aria-hidden="true"></canvas>
+<div class="shell" id="shell">
+  <div class="frame" id="frame" aria-label="房間"></div>
+  <div class="orb-slot" id="orbSlot" aria-hidden="true"></div>
+  <main class="hall" id="hall">
+    <header class="top"><span class="who-mark"><span class="seal" aria-label="緋">緋</span><span id="date"></span></span><span class="st" id="st"><i></i><span></span></span></header>
+    <div class="orb-m" id="orbM" aria-hidden="true"></div>
+    <section class="voice" id="voice" aria-live="polite"></section>
+    <section class="stones" id="stones" aria-label="今天的事"></section>
+    <div class="dock">
+      <div class="chips" id="chips" aria-live="polite"></div>
+      <form class="say" id="say" autocomplete="off">
+        <label for="msg" class="who">跟緋說</label>
+        <input id="msg" type="text" enterkeyhint="send" autocomplete="off">
+        <button type="submit" class="btn pri send" aria-label="送出"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+      </form>
+    </div>
+  </main>
+</div>
+<section class="room" id="room" aria-label="房間">
+  <div class="edge-back" id="edgeBack" aria-hidden="true"></div>
+  <header class="rbar"><button type="button" class="back" data-act="leave" aria-label="回到大廳"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>大廳</button><b id="roomName"></b><span class="soft" id="roomHint"></span></header>
+</section>
+<div id="layer"></div>
+<div id="toastSlot"></div>
+<script>
+'use strict';
+/* 記帳 App 的查詢小工具與「一句話記帳」解析：建置時直接從 ledger-app/src/App.html 取出（不另外抄一份），包在 LG 裡 */
+const LG = (() => {
+const S = { data: null, pref: {} };
+const CARRY = '(上期滾入)';
+const byOrder = (a, b) => (a.order || 0) - (b.order || 0);
+/* ───────────── 查詢小工具 ───────────── */
+
+const acc = id => S.data.accounts.find(a => a.id === id);
+const cat = id => S.data.categories.find(c => c.id === id);
+const activeAccounts = type => S.data.accounts.filter(a => !a.disabled && (!type || a.type === type)).sort(byOrder);
+const activeCats = kinds => S.data.categories.filter(c => !c.disabled && (!kinds || kinds.includes(c.kind))).sort(byOrder);
+const kindsForType = t => t === '支出' ? ['支出'] : t === '收入' ? ['收入'] : ['資產配置', '轉帳'];
+function groupsOf(kinds) {
+  const out = [];
+  activeCats(kinds).forEach(c => { if (!out.includes(c.group)) out.push(c.group); });
+  return out;
+}
+const expenseGroups = () => groupsOf(['支出']);
+function catLabel(c) {
+  if (!c) return '未分類';
+  return ['收入', '轉帳', '資產配置'].includes(c.group) ? c.name : c.group + '・' + c.name;
+}
+const accName = id => (acc(id) || {}).name || '未指定';
+
+const cycles = () => S.data.cycles || [];
+const currentCycle = () => cycles()[cycles().length - 1];
+function cycleFor(time) {
+  let id = cycles().length ? cycles()[0].id : '';
+  cycles().forEach(cy => { if (cy.start <= time) id = cy.id; });
+  return id;
+}
+const budgetOf = cid => (S.data.budgets || {})[cid] || {};
+function sumBy(cid, pick) {
+  const out = {};
+  Object.keys(S.data.summary || {}).forEach(k => {
+    const [c, catId] = k.split('|');
+    if (c !== cid) return;
+    const ct = cat(catId);
+    const key = ct && pick(ct);
+    if (key) out[key] = (out[key] || 0) + S.data.summary[k];
+  });
+  return out;
+}
+const spentByGroup = cid => sumBy(cid, c => c.kind === '支出' ? c.group : null);
+const kindTotal = (cid, kind) => sumBy(cid, c => c.kind === kind ? 'x' : null).x || 0;
+function unallocated(cid) {
+  const b = budgetOf(cid);
+  let allocated = 0;
+  Object.keys(b).forEach(g => { if (g !== CARRY) allocated += b[g]; });
+  return kindTotal(cid, '收入') + (b[CARRY] || 0) - kindTotal(cid, '資產配置') - allocated;
+}
+
+
+const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+function fixedGroups() {
+  return { 固定支出: true };
+}
+
+function parseInput(text) {
+  let t = ' ' + text.replace(/\s+/g, ' ').trim() + ' ';
+  const now = new Date();
+  let day = null;
+  let hm = null;
+
+  const rel = [['大前天', -3], ['前天', -2], ['昨天', -1], ['昨晚', -1], ['今天', 0], ['今晚', 0]];
+  for (const [w, n] of rel) if (t.includes(w)) { day = addDays(startOfDay(now), n); t = t.replace(w, ' '); break; }
+  let m = t.match(/(\d{1,2}):(\d{2})/);
+  if (m) { hm = [Number(m[1]), Number(m[2])]; t = t.replace(m[0], ' '); }
+  m = t.match(/(\d{1,2})月(\d{1,2})[日號]?/) || t.match(/(?:^|\s)(\d{1,2})\/(\d{1,2})(?=\s)/);
+  if (m) {
+    day = new Date(now.getFullYear(), Number(m[1]) - 1, Number(m[2]));
+    if (day - now > 864e5) day = new Date(now.getFullYear() - 1, Number(m[1]) - 1, Number(m[2]));
+    t = t.replace(m[0], ' ');
+  }
+  m = t.match(/(上)?(?:週|星期|禮拜)([一二三四五六日天])/);
+  if (m) {
+    const wd = '日一二三四五六'.indexOf(m[2] === '天' ? '日' : m[2]);
+    const today = now.getDay();
+    let diff = (today - wd + 7) % 7;
+    if (m[1]) diff = ((today + 6) % 7) + 7 - ((wd + 6) % 7);
+    day = addDays(startOfDay(now), -diff);
+    t = t.replace(m[0], ' ');
+  }
+
+  let amount = '';
+  const nums = Array.from(t.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(?:元|塊)?/g));
+  if (nums.length) {
+    const last = nums[nums.length - 1];
+    amount = Math.round(Number(last[1].replace(/,/g, '')));
+    t = t.slice(0, last.index) + ' ' + t.slice(last.index + last[0].length);
+  }
+
+  let accountId = '';
+  let method = '';
+  const accs = activeAccounts().slice().sort((a, b) => b.name.length - a.name.length);
+  for (const a of accs) {
+    if (a.name.length >= 2 && t.includes(a.name)) { accountId = a.id; t = t.replace(a.name, ' '); break; }
+  }
+  let tokens = t.trim().split(' ').filter(Boolean);
+  if (!accountId) {
+    const words = { '刷卡': '信用卡', '信用卡': '信用卡', '卡': '信用卡', '現金': '現金', '扣款': '銀行', '轉帳': '銀行' };
+    const i = tokens.findIndex(x => words[x]);
+    if (i >= 0) { method = words[tokens[i]]; tokens.splice(i, 1); }
+  }
+
+  let time = now.getTime();
+  if (day || hm) {
+    const d = day || startOfDay(now);
+    const [hh, mm] = hm || [now.getHours(), now.getMinutes()];
+    time = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm).getTime();
+  }
+
+  const allGroups = groupsOf(null);
+  let hint = null;
+  if (tokens.length && allGroups.includes(tokens[0])) hint = tokens[0];
+  const body = hint ? tokens.slice(1) : tokens;
+  const bodyText = body.join(' ');
+  const keyword = tokens.join(' ');
+
+  const kws = S.data.keywords;
+  let k = kws.find(x => x.keyword === keyword) || (bodyText && kws.find(x => x.keyword === bodyText));
+  if (!k) for (const tok of body) { k = kws.find(x => x.keyword === tok); if (k) break; }
+  if (!k && bodyText) k = kws.filter(x => x.keyword.length >= 2 && bodyText.includes(x.keyword)).sort((a, b) => b.keyword.length - a.keyword.length)[0];
+  let c = k ? cat(k.categoryId) : null;
+  if (c && c.disabled) c = null;
+  if (!c && bodyText) c = activeCats(null).find(x => x.name.length >= 2 && x.name !== '其他' && bodyText.includes(x.name));
+  if (hint && (!c || c.group !== hint)) {
+    const inGroup = activeCats(null).filter(x => x.group === hint);
+    c = (c && inGroup.find(x => x.name === c.name)) || inGroup[0];
+  }
+  if (!accountId && k && k.accountId && acc(k.accountId) && !acc(k.accountId).disabled) accountId = k.accountId;
+  if (!accountId && method) {
+    const list = activeAccounts(method);
+    const last = acc(S.pref.lastFrom);
+    accountId = (last && last.type === method && !last.disabled ? last : list[0] || {}).id || '';
+  }
+
+  const type = !c ? '支出' : c.kind === '收入' ? '收入' : c.kind === '支出' ? '支出' : '轉帳';
+  return {
+    type, amount, time, keyword, explicitDate: !!(day || hm),
+    note: bodyText || keyword,
+    categoryId: c ? c.id : '',
+    from: type === '收入' ? '' : accountId,
+    to: type === '收入' ? accountId : '',
+    unmatched: !c && !!bodyText
+  };
+}
+
+const ADJ = '對帳調整';
+const adjCat = () => S.data.categories.find(c => c.name === ADJ && c.kind === '轉帳' && !c.disabled);
+const isAdj = t => { const c = cat(t.categoryId); return !!c && c.name === ADJ && c.kind === '轉帳'; };
+return { S, parseInput, currentCycle, budgetOf, spentByGroup, fixedGroups, activeAccounts, activeCats, acc, cat, groupsOf, ADJ, adjCat, isAdj };
+})();
+(() => {
+const API = 'https://assistant-app.cbcb411012.workers.dev/', APPS = { money: '../ledger-web/', work: '../worklog-web/' }, VERSION = '0.9.6';
+const $ = (s, el) => (el || document).querySelector(s), $$ = (s, el) => [...(el || document).querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const fmt = n => (n < 0 ? '−' : '') + '$' + Math.abs(Math.round(n || 0)).toLocaleString('en-US');
+const pad = n => String(n).padStart(2, '0');
+const stamp = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)'), deskMQ = matchMedia('(min-width:1024px)');
+const WD = '日一二三四五六', WDJ = '日月火水木金土';
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 私密模式等寫不進去時照樣能用 */ } },
+};
+const K_KEY = 'assistant.key', K_CACHE = 'assistant.cache';
+const S = { L: null, W: null, room: null, busy: 0, tip: 'open' };
+
+/* ================= 資料服務 ================= */
+function call(fn, ...args) {
+  const k = store.get(K_KEY);
+  if (!k) return Promise.reject(new Error('AUTH:'));
+  S.busy++; syncDot();
+  // 60 秒沒回應就放棄；Google 偶爾回錯誤頁不是 JSON：都換成看得懂的訊息（不自動重送，可能其實已經做完）
+  const ctl = window.AbortController ? new AbortController() : null, timer = ctl && setTimeout(() => ctl.abort(), 60000);
+  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ k, fn, args }), signal: ctl ? ctl.signal : undefined })
+    .then(r => r.text()).then(t => { let o; try { o = JSON.parse(t); } catch (e) { throw new Error('S:伺服器沒有正常回應，請稍後再看一次有沒有存到'); } if (!o.ok) throw new Error(o.error); return o.data; })
+    .catch(e => { throw e && e.name === 'AbortError' ? new Error('S:連線逾時，請稍後再看一次有沒有存到') : e; })
+    .finally(() => { clearTimeout(timer); S.busy--; syncDot(); });
+}
+const isAuth = e => /^AUTH:/.test(String(e && e.message));
+const errMsg = e => String(e && e.message || e).replace(/^.*?(E|S|AUTH):/, '');
+function load(st) {
+  S.L = st.ledger; S.W = Object.assign({}, st.worklog, st.worklog.settings);
+  LG.S.data = S.L; try { LG.S.pref = JSON.parse(store.get('ledger.pref.v1') || '{}') || {}; } catch (e) { LG.S.pref = {}; }
+  store.set(K_CACHE, JSON.stringify(st));
+}
+async function refresh() {
+  try { load(await call('assistant_bootstrap')); if (!S.room) renderHall(false); }
+  catch (e) { if (isAuth(e)) keyScreen('金鑰不對，請重新貼上。'); else toast('連不上資料服務，先顯示上次的資料。', false); }
+}
+
+/* ================= 推播：只有緋要開，記帳、工作日誌的提醒都由緋發（每天早上 8 點的早安簡報） ================= */
+// iPhone 要先把緋加到主畫面才有推播（Safari 裡沒有 PushManager，就不問）；已經允許或拒絕過也不問
+const pushAskable = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && Notification.permission === 'default';
+const keyBytes = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+async function pushOn() {
+  S.tip = 'gone'; renderHall(false);
+  try {
+    const perm = await Notification.requestPermission();   // 要在按下去的當下問，不能先等別的
+    if (perm !== 'granted') { toast('沒有開通知。之後想開，到手機的設定裡允許緋的通知。', false); return; }
+    const reg = await Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error('背景程式還沒準備好，關掉緋再打開一次試試')), 10000))]);
+    const key = await call('push_key');
+    const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+    await call('push_subscribe', sub.toJSON());
+    toast('好，明天早上 8 點見。', false);
+  } catch (e) { toast('開通知沒成功：' + errMsg(e), false); }
+}
+
+/* ================= 金鑰：配對連結 #k=金鑰，或貼上 ================= */
+function takeKeyFromUrl() {
+  const m = /[#&]k=([0-9a-f]{32,})/i.exec(location.hash);
+  if (!m) return;
+  store.set(K_KEY, m[1]);
+  // 加到主畫面後才把網址裡的金鑰拿掉（iPhone 主畫面 App 和 Safari 的儲存空間是分開的）
+  if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) history.replaceState(null, '', location.pathname);
+}
+function keyScreen(msg) {
+  openSheet('設定金鑰', `<h2>我是緋。先讓我認得你。</h2><p class="quote">${esc(msg || '第一次使用，貼上緋的金鑰。之後這台裝置會記住。')}</p>
+    <p class="quote">金鑰在「記帳本」試算表的「設定」工作表，鍵是 assistantKey 那一列。</p>
+    <label class="field"><span>金鑰</span><textarea class="inp" id="keyIn" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea></label>`,
+    `<button type="button" class="btn pri grow" data-act="keySave">連線</button>`);
+}
+
+/* ================= 霧與球 ================= */
+const cv = $('#fog'), ctx = cv.getContext('2d');
+let R = 1, imps = [], mode = 'breath', think = 0;
+const breath = t => .5 - .5 * Math.cos(2 * Math.PI * t / 4600);
+const fr = x => x - Math.floor(x);
+function sizeFog() { R = Math.min(devicePixelRatio || 1, 2) * (deskMQ.matches ? 1 : .75); cv.width = Math.round(innerWidth * R); cv.height = Math.round(innerHeight * R); }
+/* 隨時段變化的霧：米白底不變（文字對比不受影響），只有霧的顏色跟著一天走——
+   深夜沉、清晨帶一點冷藍、白天是原本的青灰綠、傍晚帶一點暖橘、晚上慢慢暗下來。每分鐘依時間內插一次 */
+const TINTS = [[0, [150, 160, 156], .34], [5, [168, 182, 190], .3], [7.5, [186, 200, 204], .26], [11, [196, 204, 190], .24], [15.5, [200, 204, 184], .24], [17.5, [218, 196, 168], .28], [19.5, [178, 176, 168], .32], [24, [150, 160, 156], .34]];
+let tint = { rgb: '196,204,190', a: .24 }, tintAt = -1;
+function fogTint() {
+  const n = new Date(), h = n.getHours() + n.getMinutes() / 60, key = Math.floor(h * 60);
+  if (key === tintAt) return tint; tintAt = key;
+  let i = 0; while (i < TINTS.length - 2 && TINTS[i + 1][0] <= h) i++;
+  const [h0, c0, a0] = TINTS[i], [h1, c1, a1] = TINTS[i + 1], k = Math.min(1, Math.max(0, (h - h0) / (h1 - h0))), mix = (p, q) => Math.round(p + (q - p) * k);
+  tint = { rgb: c0.map((v, j) => mix(v, c1[j])).join(','), a: a0 + (a1 - a0) * k };
+  return tint;
+}
+function drop(x, y, s = 120) { imps.push({ x, y, t: performance.now(), s }); if (imps.length > 24) imps.shift(); orbKick(s / 140); }
+function blob(x, y, r, rgb, a) { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(.55, `rgba(${rgb},${a * .45})`); g.addColorStop(1, `rgba(${rgb},0)`); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); }
+const heart = () => { const h = $('#voice h1'); if (!h) return [innerWidth * .5, innerHeight * .3]; const r = h.getBoundingClientRect(); return [r.left + Math.min(r.width, 300) * .5, r.top + r.height * .5]; };
+function paintFog(t) {
+  const w = innerWidth, h = innerHeight, b = breath(t), tt = t / 1000, [hx, hy] = heart(), tn = fogTint();
+  ctx.setTransform(R, 0, 0, R, 0, 0); ctx.fillStyle = 'rgb(244,241,234)'; ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 7; i++) {
+    let x = w * fr(i * .31 + .1) + Math.sin(tt * .05 + i) * 80, y = h * fr(i * .57 + .15) + Math.cos(tt * .04 + i * 1.3) * 60;
+    x += (hx - x) * think * .4; y += (hy - y) * think * .4;
+    blob(x, y, w * (.38 + .28 * fr(i * .77)) + 60, tn.rgb, tn.a + .12 * b + think * .1);
+  }
+  imps = imps.filter(m => t - m.t < 2400);
+  for (const m of imps) { const a = Math.max(0, (t - m.t) / 2400); blob(m.x, m.y, 40 + 170 * Math.sqrt(a), '244,241,234', Math.pow(1 - a, 1.4) * Math.min(1, m.s / 120)); }
+}
+// 球：900 個點排在球面上；想事情變成環、記帳變成一疊硬幣、工作變成紙、其他變成水滴
+const ON = 900, GA = Math.PI * (3 - Math.sqrt(5));
+const SHAPES = {
+  sphere: i => { const y = 1 - (i + .5) / ON * 2, r = Math.sqrt(1 - y * y), a = i * GA; return [Math.cos(a) * r, y, Math.sin(a) * r]; },
+  coins: i => { const d = i % 3, j = Math.floor(i / 3), n = ON / 3, rim = j % 5 < 3, rr = rim ? .92 + (j % 3) * .025 : Math.sqrt((j + .5) / n) * .85, a = j * GA; return [Math.cos(a) * rr, .58 - d * .58 + (rim ? (j % 2 ? .05 : -.05) : 0), Math.sin(a) * rr]; },
+  paper: i => { const u = (i % 30) / 29 * 2 - 1, v = Math.floor(i / 30) / 29 * 2 - 1; return [u * .78, v * 1.02, .22 * Math.sin(u * 2.2) + .08 * v]; },
+  drop: i => { const t = Math.acos(1 - 2 * (i + .5) / ON), a = i * GA, r = Math.sin(t) * Math.pow(Math.sin(t / 2), 1.1) * 1.05; return [Math.cos(a) * r, -Math.cos(t) * 1.15 + .1, Math.sin(a) * r]; },
+  ring: i => { const u = i * GA, v = (i % 12) / 12 * 6.283; return [(.82 + .2 * Math.cos(v)) * Math.cos(u), .2 * Math.sin(v), (.82 + .2 * Math.cos(v)) * Math.sin(u)]; },
+};
+const orb = { pts: null, rot: 0, burst: 0 };
+function orbKick(s) { if (orb.pts) for (const p of orb.pts) p.rip += (Math.random() - .3) * s; }
+function orbWant() {
+  if (mode === 'think') return 'ring';
+  const its = (draft && draft.items) || items; if (!its || !its.length) return 'sphere';
+  const last = its[its.length - 1].t; return last === 'tx' ? 'coins' : last === 'log' ? 'paper' : 'drop';
+}
+function drawOrb(t) {
+  // 電腦：大廳右邊那顆；手機：問候語右邊一顆小的
+  const desk = deskMQ.matches, slotEl = $(desk ? '#orbSlot' : '#orbM'); if (!slotEl || S.room || (desk && $('#layer .panel'))) return;
+  const r = slotEl.getBoundingClientRect(); if (!r.width || r.bottom < 0) return;
+  // 開場：點一開始散在霧裡，慢慢聚成球
+  if (!orb.pts) orb.pts = Array.from({ length: ON }, (_, i) => { const a = Math.random() * 6.283, d = 2.2 + Math.random() * 2.5; return { x: Math.cos(a) * d, y: (Math.random() - .5) * 4, z: Math.sin(a) * d, d: (i % 17) / 17 * .5 + .5, rip: 0 }; });
+  const f = SHAPES[orbWant()], b = breath(t), tt = t / 1000;
+  orb.rot += mode === 'think' ? .045 : .006; orb.burst *= .94;
+  const S2 = (desk ? Math.min(r.width * .3, r.height * .38) : r.width * .36) * (1 + .035 * b) * (1 - .12 * Math.max(0, orb.burst - .6));
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2, cr = Math.cos(orb.rot), sr = Math.sin(orb.rot), ct = Math.cos(.38), st = Math.sin(.38);
+  ctx.setTransform(R, 0, 0, R, 0, 0); ctx.fillStyle = 'rgb(70,82,72)';
+  for (let i = 0; i < ON; i++) {
+    const p = orb.pts[i], [tx, ty, tz] = f(i), k = .055 * p.d;
+    p.x += (tx - p.x) * k; p.y += (ty - p.y) * k; p.z += (tz - p.z) * k; p.rip *= .9;
+    if (!desk && i & 1) continue;   // 手機的球小，畫一半的點就夠，不會糊成一團
+    const n = 1 + p.rip * .08 + Math.sin(tt * 1.3 + i * .7) * .012 + orb.burst * .35 * p.d;
+    const x = p.x * n, y = p.y * n, z = p.z * n, x1 = x * cr + z * sr, z1 = -x * sr + z * cr, y2 = y * ct - z1 * st, z2 = y * st + z1 * ct;
+    const pz = 1 / (1 + z2 * .32), depth = (1 - z2) / 2, sz = Math.max(desk ? 0 : 1.1, (.7 + 1.5 * depth) * (S2 / 110));
+    ctx.globalAlpha = (.14 + .5 * depth) * (1 - orb.burst * .5);
+    ctx.fillStyle = i % 11 === 0 ? 'rgb(181,69,46)' : 'rgb(70,82,72)';   // 每 11 顆有一顆是緋色——她在裡面
+    ctx.fillRect(cx + x1 * S2 * pz - sz / 2, cy + y2 * S2 * pz - sz / 2, sz, sz);
+  }
+  ctx.globalAlpha = 1;
+}
+let last = 0;
+function loop(t) {
+  requestAnimationFrame(loop);
+  // 房間裡看不到霧：停下來省電；手機每秒 30 張就夠
+  if (document.hidden || S.room || t - last < (deskMQ.matches ? 15 : 33)) return; last = t;
+  think += ((mode === 'think' ? 1 : 0) - think) * .06; paintFog(t); drawOrb(t); bob(t);
+}
+sizeFog(); addEventListener('resize', () => { sizeFog(); measureStones(); });
+if (reduce.matches) paintFog(0); else requestAnimationFrame(loop);
+addEventListener('pointerdown', e => { if (!reduce.matches && !S.room) drop(e.clientX, e.clientY, 140); }, { passive: true });
+
+/* ================= 大廳 ================= */
+const isWork = d => d.getDay() >= 1 && d.getDay() <= 5 && d.getHours() >= 8 && d.getHours() < 19;
+const slot = h => h < 5 ? '深夜' : h < 8 ? '清晨' : h < 12 ? '上午' : h < 13 ? '午休' : h < 17 ? '下午' : h < 19 ? '傍晚' : '夜晚';
+function nextWork(d) {
+  const x = new Date(d); x.setHours(8, 0, 0, 0);
+  if (!(d.getDay() >= 1 && d.getDay() <= 5 && d.getHours() < 8)) { do { x.setDate(x.getDate() + 1); } while (x.getDay() === 0 || x.getDay() === 6); }
+  const diff = Math.round((new Date(x).setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) / 864e5);
+  return (diff === 0 ? '今天' : diff === 1 ? '明天' : '週' + WD[x.getDay()]) + ' 08:00';
+}
+// 工作日誌：案件的急迫度（跟工作日誌一樣：缺件、超過 14 天沒動排前面）
+const today = () => stamp(new Date()).slice(0, 10);
+const daysSince = ds => ds ? Math.round((new Date(today()) - new Date(String(ds).slice(0, 10))) / 864e5) : 0;
+const openCases = () => (S.W.cases || []).filter(k => k.status !== '已結案');
+const urgency = k => (/缺件/.test(k.progress) ? 0 : daysSince(k.updated) > 14 ? 1 : 2);
+const clientOf = id => (S.W.clients || []).find(c => c.id === id);
+const nick = c => c ? (c.alias[0] || c.name) : '';
+// 記帳：這期某個大類還能花多少（用記帳 App 自己的算法）
+function moneyNow() {
+  const cy = LG.currentCycle(); if (!cy) return null;
+  const b = LG.budgetOf(cy.id), sp = LG.spentByGroup(cy.id), fg = LG.fixedGroups();
+  const groups = Object.keys(b).filter(g => g !== '(上期滾入)' && !fg[g] && b[g] > 0);
+  const g = groups.includes('日常') ? '日常' : groups[0];
+  return g ? { g, left: b[g] - (sp[g] || 0) } : null;
+}
+function hallThings(d) {
+  const work = isWork(d), mn = moneyNow(), notices = (S.L.notices || []).length;
+  const urgent = openCases().slice().sort((a, b) => urgency(a) - urgency(b) || daysSince(b.updated) - daysSince(a.updated))[0];
+  const pend = (S.W.pending || []).filter(p => !p.done).length;
+  const sch = (S.W.sched || [])[0];
+  return {
+    money: mn ? { l: `${mn.g}還能花`, v: `<span class="num">${fmt(mn.left)}</span>`, ds: `${esc(mn.g)}還能花 <span class="num">${fmt(mn.left)}</span>`, lit: notices > 0 || mn.left < 0 }
+      : { l: '錢', v: '還沒設預算', ds: '還沒設預算', lit: notices > 0 },
+    work: work ? { l: urgent ? '先處理' : '工作', v: urgent ? esc(nick(clientOf(urgent.client)) || '案件') : '沒有急事', ds: urgent ? `${esc(nick(clientOf(urgent.client)))}・${daysSince(urgent.updated)} 天沒動` : '沒有進行中的案件', lit: pend > 0 || (urgent && (urgency(urgent) < 2)) }
+      : { l: '工作', v: '收起來了', ds: `收起來了・${nextWork(d)}`, quiet: true },
+    life: { l: sch ? `${sch.day} ${sch.t}` : '行程', v: sch ? esc(sch.d) : '之後開放', ds: sch ? `${sch.day} ${sch.t}・${esc(sch.d)}` : '之後開放', quiet: !sch, soon: true },
+    body: { l: '身體', v: '之後開放', ds: '之後開放', quiet: true, soon: true },
+    urgent, notices, pend,
+  };
+}
+/* 四道扉的紋：細墨線的和風圖示（錢＝寬永通寶、工作＝筆、生活＝茶碗、身體＝竹） */
+const NAMES = { money: '錢', work: '工作', life: '生活', body: '身體' };
+const MON = {
+  money: '<svg class="mon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11.5"/><circle cx="16" cy="16" r="8.6" opacity=".45"/><rect x="13" y="13" width="6" height="6" rx=".6"/></svg>',
+  work: '<svg class="mon" viewBox="0 0 32 32" aria-hidden="true"><path d="M26.2 4.2l1.6 1.6M25.4 5L15.6 14.8M27 6.6l-9.8 9.8"/><path d="M14.6 13.8l3.6 3.6"/><path d="M15.4 17.4c-2.6.2-5.6 2.4-7.4 5.6-.8 1.4-1.3 2.8-1.6 4.2 1.4-.3 2.8-.8 4.2-1.6 3.2-1.8 5.4-4.8 5.6-7.4"/><path d="M18 27.5h9" opacity=".45"/></svg>',
+  life: '<svg class="mon" viewBox="0 0 32 32" aria-hidden="true"><path d="M5.5 15.5h21c-.4 6.2-4.8 10-10.5 10S5.9 21.7 5.5 15.5z"/><path d="M12.5 25.3V27h7v-1.7"/><path d="M13 11.5c-1.2-1.6.9-2.6 0-4.6M18.5 11.5c-1.2-1.6.9-2.6 0-4.6" opacity=".55"/></svg>',
+  body: '<svg class="mon" viewBox="0 0 32 32" aria-hidden="true"><path d="M12 4v24M10.4 11h3.2M10.4 19h3.2M20 9.5V28M18.4 16h3.2M18.4 23h3.2"/><path d="M12 10c3-.4 5.6-2 7.4-5.2M20 15.5c2.6-.2 4.8-1.4 6.5-3.8" opacity=".55"/></svg>',
+};
+function renderHall(anim) {
+  if (!S.L) return;
+  const d = new Date(), work = isWork(d), sl = slot(d.getHours()), nx = nextWork(d), weekend = d.getDay() === 0 || d.getDay() === 6;
+  $('#date').textContent = `${d.getMonth() + 1} 月 ${d.getDate()} 日　${WDJ[d.getDay()]}曜・${sl}`;
+  const st = $('#st'); st.classList.toggle('on', work); st.lastElementChild.textContent = work ? '上班中' : '下班';
+  const greet = ['清晨', '上午'].includes(sl) ? '早' : ['午休', '下午'].includes(sl) ? '午安' : sl === '傍晚' ? '辛苦了' : '晚上好';
+  const T = hallThings(d), n = openCases().length;
+  const line = work ? `今天有 ${n} 件案子在跑，${T.pend ? `還有 ${T.pend} 件待確認。` : '沒有待確認。'}晚上七點後我就不提工作了。`
+    : weekend ? `工作先收起來，${nx} 再跟你說。好好休息。` : `下班了，工作收起來，${nx} 再跟你說。`;
+  const u = T.urgent;
+  const tip = work && u && urgency(u) < 2 ? { q: `要不要先處理${esc(nick(clientOf(u.client)))}？${/缺件/.test(u.progress) ? '還在缺件。' : `${daysSince(u.updated)} 天沒動了。`}`, yes: '打開工作', go: 'work' }
+    // 開通知只要問一次（允許或拒絕之後就不再出現），排在 LINE Pay 前面
+    : pushAskable() ? { q: '要我每天早上 8 點，把今天的行程、到期的事、繳費日跟你說嗎？', yes: '好', act: 'pushOn' }
+    : T.notices ? { q: `有 ${T.notices} 筆 LINE Pay 還沒記。`, yes: '去記帳', go: 'money' } : null;
+  const tipH = tip && S.tip === 'open' ? `<div class="ask"><span class="q">${tip.q}</span><button type="button" class="btn pri" ${tip.act ? `data-act="${tip.act}"` : `data-go="${tip.go}"`}>${tip.yes}</button><button type="button" class="btn text" data-act="tipNo">之後再說</button></div>` : '';
+  $('#voice').innerHTML = `<h1${anim ? ' class="surface"' : ''}>${greet}，旻峻。</h1><p${anim ? ' class="surface" style="animation-delay:120ms"' : ''}>${line}</p>${tipH}`;
+  const door = (k, nm, x) => `<button type="button" class="door${x.lit ? ' lit' : ''}${x.quiet ? ' quiet' : ''}" data-go="${k}" aria-label="${nm}" title="${nm}">${MON[k]}</button>`;
+  const edge = (cls, k, nm) => `<div class="edge ${cls}"><i class="ln"></i>${door(k, nm, T[k])}<i class="ln"></i></div>`;
+  $('#frame').innerHTML = edge('h t', 'life', '生活') + edge('v r', 'work', '工作') + edge('h b', 'body', '身體') + edge('v l', 'money', '錢');
+  const spots = [['left', 10, 10], ['right', 14, 0], ['left', 30, 46], ['right', 8, 38]];
+  $('#stones').innerHTML = ['money', 'life', 'work', 'body'].map((k, i) => { const x = T[k], [side, sx, ty] = spots[i];
+    return `<button type="button" class="stone${x.lit ? ' lit' : ''}${x.quiet ? ' quiet' : ''}${anim ? ' surface' : ''}" data-go="${k}" aria-label="${NAMES[k]}" title="${NAMES[k]}" style="${side}:${sx}%;top:${ty}%;animation-delay:${anim ? 240 + i * 70 : 0}ms">${MON[k]}</button>`; }).join('');
+  measureStones();
+}
+let stones = [];
+function measureStones() { stones = $$('.stone').map((el, i) => { el.style.transform = ''; const r = el.getBoundingClientRect(); return { el, x: r.left + r.width / 2, y: r.top + r.height / 2, ph: i * 1.7 }; }); }
+function bob(t) {
+  if (reduce.matches || deskMQ.matches) return; const tt = t / 1000, b = breath(t);
+  for (const s of stones) {
+    let h = (b - .5) * 6, dx = 0;
+    for (const m of imps) { const a = (t - m.t) / 1200; if (a < 0 || a > 1) continue; const k = (1 - a) * Math.exp(-Math.hypot(s.x - m.x, s.y - m.y) / 140) * m.s; h -= k * .05; dx += (s.x > m.x ? 1 : -1) * k * .04; }
+    s.el.style.transform = `translate(${(Math.sin(tt * .32 + s.ph) * 4 + dx).toFixed(1)}px,${(Math.sin(tt * .45 + s.ph * 1.3) * 3 + h).toFixed(1)}px)`;
+  }
+}
+function syncDot() { const st = $('#st'); if (st) st.classList.toggle('sync', S.busy > 0); }
+
+/* ================= 房間：直接內嵌記帳與工作日誌（同一個網域，助理的金鑰兩邊都能用） ================= */
+const ROOMS = { money: { zh: '錢', side: 'left' }, work: { zh: '工作', side: 'right' } };
+const VEC = { left: [80, 0], right: [-80, 0], top: [0, 80], bottom: [0, -80] };
+const frames = {};
+function shareKey() {
+  // 第一次走進房間：兩個 App 還沒有金鑰就用助理的（同網域共用這台裝置的儲存空間）；已經配對過的不動
+  const k = store.get(K_KEY); if (!k) return;
+  if (!store.get('ledger.key.v1')) store.set('ledger.key.v1', JSON.stringify(k));
+  if (!store.get('worklog-key')) store.set('worklog-key', k);
+}
+const canVT = () => !!document.startViewTransition && !reduce.matches && !document.hidden;
+// 轉場一定要換到畫面：View Transition 的更新如果 0.9 秒內還沒跑（分頁在背景、瀏覽器卡住），就直接換，不會卡在半路
+function viewSwap(apply, after) {
+  let done = false; const run = () => { if (done) return; done = true; apply(); };
+  try { const vt = document.startViewTransition(run); const quiet = () => {}; vt.ready.catch(quiet); vt.updateCallbackDone.catch(quiet); vt.finished.catch(quiet).finally(after); } catch (e) { run(); after(); return; }
+  setTimeout(run, 900);
+}
+const doorOf = k => $(deskMQ.matches ? `.door[data-go="${k}"]` : `.stone[data-go="${k}"]`);
+function enterRoom(k, src) {
+  if (!ROOMS[k]) { toast(k === 'life' ? '生活之後開放。行程先在工作裡看。' : '身體之後開放。', false); return; }
+  if (S.room === k) return;
+  shareKey();
+  const first = !S.room, rm = $('#room'), side = deskMQ.matches ? ROOMS[k].side : 'right', [dx, dy] = VEC[side];
+  S.room = k; closeSheet();
+  $('#roomName').innerHTML = MON[k]; $('#roomName').setAttribute('aria-label', ROOMS[k].zh); $('#roomHint').textContent = '';
+  Object.entries(frames).forEach(([id, f]) => { f.hidden = id !== k; });
+  if (!frames[k]) { const f = document.createElement('iframe'); f.src = APPS[k]; f.title = k === 'money' ? '記帳' : '工作日誌'; rm.append(f); frames[k] = f; $('#roomHint').textContent = '打開中…'; f.addEventListener('load', () => { if (S.room === k) $('#roomHint').textContent = ''; }); }
+  rm.style.setProperty('--dx', -dx + 'px'); rm.style.setProperty('--dy', -dy + 'px'); rm.dataset.side = side;
+  try { if (location.hash !== '#' + k) history.pushState(null, '', '#' + k); } catch (e) { /* 預覽環境不能改網址 */ }
+  mode = 'think'; setTimeout(() => { mode = 'breath'; }, 500);
+  const hall = $('#shell');
+  const show = () => { hall.classList.remove('leave'); hall.classList.add('away'); rm.classList.add('on', 'enter'); $('#room .back').focus({ preventScroll: true }); setTimeout(() => rm.classList.remove('enter'), 600); };
+  if (reduce.matches || !first) return show();
+  const from = src && src.closest('.door,.stone') || doorOf(k);
+  if (canVT() && from) {
+    from.style.viewTransitionName = 'roomtitle';
+    viewSwap(() => { from.style.viewTransitionName = ''; $('#roomName').style.viewTransitionName = 'roomtitle'; hall.classList.add('away'); rm.classList.add('on'); },
+      () => { $('#roomName').style.viewTransitionName = ''; $('#room .back').focus({ preventScroll: true }); });
+    return;
+  }
+  hall.style.setProperty('--dx', dx + 'px'); hall.style.setProperty('--dy', dy + 'px'); hall.classList.remove('back-in'); hall.classList.add('leave');
+  setTimeout(show, 340);
+}
+function leaveRoom(push = true) {
+  if (!S.room) return; const k = S.room; S.room = null;
+  if (push) { try { if (location.hash) history.back(); } catch (e) {} }
+  const rm = $('#room'), side = rm.dataset.side || 'right', [dx, dy] = VEC[side], hall = $('#shell');
+  const show = () => { rm.classList.remove('on', 'exit'); renderHall(false);
+    hall.classList.remove('away'); hall.style.setProperty('--dx', dx + 'px'); hall.style.setProperty('--dy', dy + 'px'); if (!reduce.matches) hall.classList.add('back-in');
+    setTimeout(() => hall.classList.remove('back-in'), 600); const dr = $(`[data-go="${k}"]`); dr && dr.focus({ preventScroll: true });
+    refresh();   // 在房間裡改過東西，大廳的數字跟著更新
+  };
+  if (reduce.matches) return show();
+  if (canVT()) {
+    $('#roomName').style.viewTransitionName = 'roomtitle';
+    viewSwap(() => { $('#roomName').style.viewTransitionName = ''; rm.classList.remove('on'); show(); hall.classList.remove('back-in'); const to = doorOf(k); if (to) to.style.viewTransitionName = 'roomtitle'; },
+      () => { const to = doorOf(k); if (to) to.style.viewTransitionName = ''; rm.style.transform = ''; });
+    return;
+  }
+  rm.classList.add('exit'); setTimeout(show, 250);
+}
+// Siri 捷徑：打開 …/assistant-web/#say=午餐%20120 → 直接替你說這句（一樣會先確認）。已經開著的分頁只會換 #，所以也聽 hashchange
+function handleSay() {
+  const sm = /[#&]say=([^&]*)/.exec(location.hash); if (!sm || !S.L) return;
+  let t = ''; try { t = decodeURIComponent(sm[1].replace(/\+/g, ' ')).trim(); } catch (e) { t = ''; }
+  try { history.replaceState(null, '', location.pathname); } catch (e) { /* 預覽環境 */ }
+  if (!t) return;
+  if (S.room) leaveRoom(false);
+  closeSheet(); msg.value = t; renderChips(); talk(t);
+}
+addEventListener('hashchange', handleSay);
+{ // 左邊緣滑回大廳：房間跟著手指走，放開時超過 80px（或甩得夠快）就回去
+  const eb = $('#edgeBack'), rm = $('#room'); let x0 = null, dx = 0, t0 = 0;
+  eb.addEventListener('pointerdown', e => { x0 = e.clientX; dx = 0; t0 = performance.now(); rm.style.transition = 'none'; eb.setPointerCapture(e.pointerId); });
+  eb.addEventListener('pointermove', e => { if (x0 == null) return; dx = Math.max(0, e.clientX - x0); rm.style.transform = `translateX(${dx}px)`; });
+  const end = () => { if (x0 == null) return; const v = dx / Math.max(1, performance.now() - t0); x0 = null;
+    rm.style.transition = 'transform 240ms cubic-bezier(.4,0,.2,1)';
+    if (dx > 80 || v > .5) { rm.style.transform = 'translateX(100%)'; setTimeout(() => { rm.style.transition = ''; leaveRoom(); setTimeout(() => { rm.style.transform = ''; }, 300); }, 200); }
+    else rm.style.transform = ''; };
+  eb.addEventListener('pointerup', end); eb.addEventListener('pointercancel', end);
+}
+addEventListener('popstate', () => { const k = location.hash.slice(1); if (ROOMS[k]) enterRoom(k); else if (S.room) leaveRoom(false); });
+
+/* ================= 跟她說：理解 → 確認 → 分到兩邊 =================
+   一句話依標點、「然後／還有／順便」切段。每段：
+   - 提到客戶（名稱或簡稱）、或有工作日誌的業務／諮詢關鍵字 → 工作日誌（交給它原本的粗分，排程再精分）
+   - 有金額 → 記帳（記帳 App 自己的一句話解析：日期、帳戶、分類關鍵字）
+   - 其他 → 也先記進工作日誌的原始紀錄（生活房間開放前的暫放處） */
+function clientIn(s) {
+  let hit = null, len = 0;
+  (S.W.clients || []).forEach(c => [c.name, ...(c.alias || [])].forEach(n => { if (n && n.length >= 2 && n.length > len && s.includes(n)) { hit = c; len = n.length; } }));
+  return hit;
+}
+function defaultFrom(p) {
+  if (p.from) return p.from;
+  const lastId = (LG.S.pref || {}).lastFrom, last = lastId && LG.acc(lastId);
+  if (last && !last.disabled) return last.id;
+  return (LG.activeAccounts('現金')[0] || LG.activeAccounts()[0] || {}).id || '';
+}
+function parse(text) {
+  const out = [], kw = [...(S.W.kwBiz || []), ...(S.W.kwAsk || [])].filter(Boolean);
+  for (const part of text.split(/[，,。；;！!\n]|然後|還有|順便/).map(s => s.trim()).filter(Boolean)) {
+    const c = clientIn(part), p = LG.parseInput(part), workish = !!c || kw.some(k => part.includes(k));
+    if (workish && !(p.amount && !c && p.categoryId)) { out.push({ t: 'log', text: part, who: c ? nick(c) : '' }); continue; }
+    if (p.amount > 0) { p.from = p.type === '收入' ? '' : defaultFrom(p); out.push({ t: 'tx', text: part, p }); continue; }
+    out.push({ t: 'memo', text: part });
+  }
+  return out;
+}
+const msg = $('#msg'); let items = [], chipT, draft = null, cd = null;
+const catName = id => { const c = LG.cat(id); return c ? (['收入', '轉帳', '資產配置'].includes(c.group) ? c.name : c.group + '・' + c.name) : '還不知道分類'; };
+const chipHTML = x => x.t === 'tx' ? `<span class="chip">帳・${esc(x.p.note || x.text)} <span class="num">${fmt(x.p.amount)}</span></span>`
+  : x.t === 'log' ? `<span class="chip">工作・${esc(x.who || x.text.slice(0, 8))}</span>` : `<span class="chip">記著・${esc(x.text.slice(0, 8))}</span>`;
+// 邊打邊標出她會怎麼處理：問問題、對帳、或拆成記帳／工作
+function renderChips() {
+  if (!S.L) return; const v = msg.value.trim();
+  if (!v) { items = []; $('#chips').innerHTML = ''; return; }
+  if (taxIntent(v)) { items = []; $('#chips').innerHTML = '<span class="chip">問・查統編</span>'; return; }
+  const r = reconcileIntent(v);
+  if (r) { items = [{ t: 'tx' }]; $('#chips').innerHTML = `<span class="chip">對帳・${esc(r.acct.name)} <span class="num">${fmt(r.acct.type === '信用卡' ? -r.real : r.real)}</span></span>`; return; }
+  if (isQuestion(v)) { items = []; $('#chips').innerHTML = '<span class="chip">問・我查一下</span>'; return; }
+  items = parse(v); $('#chips').innerHTML = items.map(chipHTML).join('');
+}
+msg.addEventListener('input', () => { orbKick(1.2); clearTimeout(chipT); chipT = setTimeout(renderChips, 240); });
+// 輸入框是空的時候，給幾句可以直接點的範例（用你自己的帳戶、客戶名稱）
+msg.addEventListener('focus', () => { if (!msg.value.trim() && S.L) $('#chips').innerHTML = examples().map(x => `<button type="button" class="chip" data-try>${esc(x)}</button>`).join(''); });
+function examples() {
+  const bank = LG.activeAccounts('銀行')[0], u = openCases().slice().sort((a, b) => urgency(a) - urgency(b))[0], mn = moneyNow();
+  return [mn ? `${mn.g}還能花多少？` : '這期花了多少？', '這週花了多少？', u ? `${nick(clientOf(u.client))}到哪了？` : '有哪些案件要追？', bank ? `${bank.name}剩 ${Math.max(0, Math.round((S.L.balances[bank.id] || 0) / 100) * 100)}` : '', '午餐 120'].filter(Boolean);
+}
+$('#say').addEventListener('submit', e => { e.preventDefault(); talk(msg.value.trim()); });
+/* ================= 問她統編：「台積電統編」「遠傳的統一編號是多少？」「22099131 是哪家」 =================
+   資料是公開的公司登記資料（Worker 的 company_byName／company_byId，資料來自 company-lookup），只讀。 */
+function taxIntent(t) {
+  const s = t.replace(/\s+/g, '');
+  const id = s.match(/^(?:查)?(?:統編|統一編號)?[:：]?(\d{8}|\d{4}-\d{4})(?:是)?(?:哪(?:一)?家(?:公司)?|什麼公司|誰)?[？?]?$/);
+  if (id && /統編|統一編號|哪|什麼公司|誰/.test(s)) return { id: id[1] };
+  const byName = s.match(/^(?:查)?(.{2,30}?)(?:的)?(?:統編|統一編號)(?:是)?(?:多少|幾號|幾|是什麼|是啥)?[？?]?$/)
+    || s.match(/^(?:查)?(?:統編|統一編號)[:：]?(.{2,30}?)[？?]?$/);
+  // 「幫城發改統編」「跟客戶要統編」是工作紀錄，不是問我：名稱那段有動作的字就不當成查詢
+  if (byName && !/^\d+$/.test(byName[1]) && !/幫|改|換|補|填|寄|給|問|要|跟|更新|確認|提供|傳給|傳來|核對/.test(byName[1])) return { name: byName[1] };
+  return null;
+}
+const money0 = n => (n == null ? '' : Number(n).toLocaleString('en-US') + ' 元');
+async function answerTax(q) {
+  if (q.id) {
+    const r = await call('company_byId', q.id);
+    if (r.status !== 'ok') return { h: esc(r.message), sub: '統編 ' + esc(String(q.id)) };
+    const c = r.company;
+    return { h: esc(c.name), sub: '統編 ' + c.id, rows: [{ w: '地址', a: esc(c.address || '') }, { w: '資本額', a: money0(c.capital) }, { w: '行業', a: esc(c.industry || '') }].filter(x => x.a) };
+  }
+  const r = await call('company_byName', q.name, 3);
+  if (r.status !== 'ok') return { h: r.status === 'vague' ? '名稱太籠統，多說幾個字' : `找不到「${esc(q.name)}」`, sub: '只查得到公司，行號、工作室和已經歇業的查不到' };
+  const [top, ...rest] = r.candidates;
+  return {
+    h: `${esc(top.name)}<br><span class="num">${top.id}</span>`,
+    sub: (r.confident ? '' : '有幾家很像，最可能是這家。') + esc(top.address || ''),
+    rows: r.confident ? [] : rest.map(c => ({ w: esc(c.name), s: esc(c.address || ''), a: `<span class="num">${c.id}</span>` })),
+  };
+}
+function talk(text) {
+  if (!S.L || !text) { msg.focus(); return; }
+  clearTimeout(chipT); mode = 'think';
+  setTimeout(() => {
+    mode = 'breath';
+    const tq = taxIntent(text);
+    if (tq) { answerTax(tq).then(a => showAnswer(text, a), e => showAnswer(text, { h: '這次沒查到', sub: esc(errMsg(e)) })); return; }
+    const r = reconcileIntent(text); if (r) { confirmReconcile(text, r); return; }
+    if (isQuestion(text)) { showAnswer(text, answer(text)); return; }
+    renderChips(); if (!items.length) { msg.focus(); return; }
+    confirmTalk(text, items);
+  }, reduce.matches ? 0 : 700);
+}
+
+/* ================= 問她：用規則從兩邊的資料算出答案（不寫入任何東西） =================
+   會的：花了多少（今天／昨天／這週／這個月／上個月／這一期；可指定大類、子類、記過的關鍵字）、還能花多少、帳戶有多少、
+   某個客戶的案件到哪、有哪些案件要追、今天明天的行程。不會的就老實說，並列出會的。 */
+const QWORDS = /花了?多少|花費|開銷|還(能|可以)花|還剩(多少|幾)|剩多少|有多少錢|多少錢了|餘額|存款|淨資產|(到|在)哪(了|裡)?|進度|狀況|怎麼樣了?|有什麼行程|有哪些|要做什麼|要追|幾件|行程/;
+function isQuestion(t) {
+  if (/(詢問|問了|客戶問|來電問)/.test(t) && !/[？?]\s*$/.test(t)) return false;   // 「客戶問光世代多少錢」是工作紀錄，不是問我
+  return /[？?]\s*$/.test(t) || QWORDS.test(t);
+}
+const sod = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+function periodOf(t) {
+  const n = new Date(), d0 = sod(n), end = n.getTime() + 1;
+  if (/今天/.test(t)) return { a: d0.getTime(), b: end, label: '今天' };
+  if (/昨天/.test(t)) return { a: d0.getTime() - 864e5, b: d0.getTime(), label: '昨天' };
+  if (/這週|本週|這禮拜|這星期/.test(t)) { const m = new Date(d0); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return { a: m.getTime(), b: end, label: '這週' }; }
+  if (/上個月/.test(t)) return { a: new Date(n.getFullYear(), n.getMonth() - 1, 1).getTime(), b: new Date(n.getFullYear(), n.getMonth(), 1).getTime(), label: '上個月' };
+  if (/這個月|本月/.test(t)) return { a: new Date(n.getFullYear(), n.getMonth(), 1).getTime(), b: end, label: '這個月' };
+  const cy = LG.currentCycle(); return { a: cy ? Number(cy.start) : new Date(n.getFullYear(), n.getMonth(), 1).getTime(), b: end, label: '這一期' };
+}
+function catsIn(t) {
+  const ex = LG.activeCats(['支出']);
+  const g = [...new Set(ex.map(c => c.group))].sort((a, b) => b.length - a.length).find(g => t.includes(g));
+  if (g) return { label: g, group: g, ids: ex.filter(c => c.group === g).map(c => c.id) };
+  const c = ex.filter(c => c.name.length >= 2 && c.name !== '其他').sort((a, b) => b.name.length - a.name.length).find(c => t.includes(c.name));
+  if (c) return { label: c.name, group: c.group, ids: [c.id] };
+  const k = (S.L.keywords || []).filter(k => k.keyword.length >= 2 && t.includes(k.keyword)).sort((a, b) => b.keyword.length - a.keyword.length)[0];
+  if (k) return { label: k.keyword, group: (LG.cat(k.categoryId) || {}).group, note: k.keyword };
+  return null;
+}
+function acctIn(t) {
+  const list = LG.activeAccounts().filter(a => a.type !== '理財');
+  const byName = list.filter(a => a.name.length >= 2 && t.includes(a.name)).sort((a, b) => b.name.length - a.name.length)[0];
+  if (byName) return byName;
+  const one = type => { const l = list.filter(a => a.type === type); return l.length === 1 ? l[0] : null; };
+  if (/現金|錢包/.test(t)) return one('現金');
+  if (/信用卡|卡費|未繳/.test(t)) return one('信用卡');
+  if (/銀行|存款/.test(t)) return one('銀行');
+  return null;
+}
+const dm = ms => { const d = new Date(ms); return `${d.getMonth() + 1}/${d.getDate()}`; };
+const valueOf = a => a.type === '理財' && a.shares != null && a.shares !== '' && Number(a.price) > 0 ? Math.round(a.shares * a.price) : (S.L.balances[a.id] || 0);
+function paceNow(cy) { const s = sod(new Date(Number(cy.start))), e = new Date(s.getFullYear(), s.getMonth() + 1, s.getDate()), len = Math.round((e - s) / 864e5); return Math.round(Math.min(len, Math.floor((sod(new Date()) - s) / 864e5) + 1) / len * 100); }
+function answer(t) {
+  const c = clientIn(t);
+  // 案件到哪
+  if (c) {
+    const ks = (S.W.cases || []).filter(k => k.client === c.id).sort((a, b) => (a.status === '已結案') - (b.status === '已結案') || urgency(a) - urgency(b));
+    const open = ks.filter(k => k.status !== '已結案');
+    const last = k => (S.W.items || []).filter(i => i.case === k.id).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))[0];
+    return { h: open.length ? `${esc(nick(c))}有 ${open.length} 件在跑。` : `${esc(nick(c))}現在沒有進行中的案件。`,
+      rows: ks.slice(0, 6).map(k => { const d = daysSince(k.updated), l = last(k);
+        return { w: `${esc(k.action)}・${esc(k.product)}`, s: `${esc((S.W.stepShort || {})[k.progress] || k.progress)}・${k.status === '等待中' ? '等對方' : k.status === '已結案' ? '結案' : '換你'}${l ? '・' + esc(String(l.text).replace(/^進度 → [^：]+：?/, '').replace(/^開新案件：?/, '').slice(0, 24)) : ''}`, a: k.status === '已結案' ? '' : (d ? `${d} 天沒動` : '今天有動') }; }), go: 'work' };
+  }
+  // 行程
+  if (/行程|幾點|要去哪|有什麼安排/.test(t) || (/(今天|明天|後天)/.test(t) && /(有什麼|要幹嘛|要做什麼)/.test(t) && !/案件|案子/.test(t))) {
+    const off = /後天/.test(t) ? [2] : /明天/.test(t) ? [1] : /今天/.test(t) ? [0] : [0, 1];
+    const days = off.map(o => { const d = new Date(); d.setDate(d.getDate() + o); return stamp(d).slice(0, 10); });
+    const evs = (S.W.events || []).filter(e => days.some(ds => e.date === ds || (e.end && e.date <= ds && ds <= e.end))).sort((a, b) => (a.date + a.t).localeCompare(b.date + b.t));
+    const label = off.length > 1 ? '今明兩天' : ['今天', '明天', '後天'][off[0]];
+    return { h: evs.length ? `${label}有 ${evs.length} 件行程。` : `${label}沒有行程。`, rows: evs.map(e => ({ w: esc(e.d), s: `${dm(new Date(e.date).getTime())}`, a: e.t || '全天' })), go: 'work' };
+  }
+  // 有哪些案件要追
+  if (/案件|案子|要追|要做什麼|待確認|工作/.test(t)) {
+    const list = openCases().slice().sort((a, b) => urgency(a) - urgency(b) || daysSince(b.updated) - daysSince(a.updated)), pend = (S.W.pending || []).filter(p => !p.done).length;
+    return { h: `${list.length} 件在跑${pend ? `，${pend} 件待確認` : ''}。`, sub: list.length ? '缺件和太久沒動的排前面。' : '',
+      rows: list.slice(0, 6).map(k => ({ w: esc(nick(clientOf(k.client)) || '案件'), s: `${esc(k.action)}・${esc(k.product)}・${esc((S.W.stepShort || {})[k.progress] || k.progress)}`, a: daysSince(k.updated) ? `${daysSince(k.updated)} 天沒動` : '今天有動' })), go: 'work' };
+  }
+  const m = catsIn(t), a = acctIn(t);
+  // 還能花多少
+  if (/還(能|可以)花|還剩|剩多少|預算/.test(t) && !a) {
+    const cy = LG.currentCycle(); if (!cy) return { h: '這一期還沒設預算。', go: 'money' };
+    const b = LG.budgetOf(cy.id), sp = LG.spentByGroup(cy.id), fg = LG.fixedGroups(), pct = paceNow(cy);
+    const gs = Object.keys(b).filter(g => g !== '(上期滾入)' && !fg[g] && b[g] > 0);
+    if (m && gs.includes(m.group)) { const g = m.group, left = b[g] - (sp[g] || 0);
+      return { h: left >= 0 ? `${esc(g)}這一期還能花 ${fmt(left)}。` : `${esc(g)}這一期超支 ${fmt(-left)}。`, sub: `預算 ${fmt(b[g])}，用了 ${fmt(sp[g] || 0)}（${Math.round((sp[g] || 0) / b[g] * 100)}%），這一期過了 ${pct}%。`, go: 'money' }; }
+    const tot = gs.reduce((s, g) => s + b[g] - (sp[g] || 0), 0);
+    return { h: `這一期還能花 ${fmt(tot)}。`, sub: `這一期過了 ${pct}%。`, rows: gs.map(g => ({ w: esc(g), s: `預算 ${fmt(b[g])}`, a: fmt(b[g] - (sp[g] || 0)) })), go: 'money' };
+  }
+  // 花了多少
+  if (/花|支出|開銷|用了/.test(t)) {
+    const p = periodOf(t), cats = m;
+    const txs = (S.L.recent || []).filter(x => x.type === '支出' && !x.void && x.time >= p.a && x.time < p.b && (LG.cat(x.categoryId) || {}).kind === '支出'
+      && (!cats || (cats.note ? String(x.note || '').includes(cats.note) : cats.ids.includes(x.categoryId)))).sort((a, b) => b.amount - a.amount);
+    const sum = txs.reduce((s, x) => s + x.amount, 0), cyc = (S.L.cycles || []).slice(-2)[0], partial = cyc && p.a < Number(cyc.start);
+    return { h: `${p.label}${cats ? esc(cats.label) : ''}花了 ${fmt(sum)}。`, sub: (txs.length ? `${txs.length} 筆，最多的是 ${esc(txs[0].note || '')} ${fmt(txs[0].amount)}。` : '沒有紀錄。') + (partial ? '（我只看得到最近兩期的明細）' : ''),
+      rows: txs.slice(0, 5).map(x => ({ w: esc(x.note || (LG.cat(x.categoryId) || {}).name || ''), s: `${dm(x.time)}・${esc((LG.cat(x.categoryId) || {}).group || '')}`, a: fmt(x.amount) })), go: 'money' };
+  }
+  // 帳戶有多少
+  if (a || /有多少錢|多少錢了|餘額|存款|淨資產|可以用的錢/.test(t)) {
+    if (a) { const bal = S.L.balances[a.id] || 0, card = a.type === '信用卡';
+      return { h: card ? `${esc(a.name)}帳上未繳 ${fmt(-bal)}。` : `${esc(a.name)}帳上有 ${fmt(bal)}。`, sub: `實際不一樣的話，跟我說「${esc(a.name)}${card ? '未繳' : '剩'} 實際的數字」，我幫你對帳。`, go: 'money' }; }
+    const accs = LG.activeAccounts(), avail = accs.filter(x => x.type !== '理財').reduce((s, x) => s + (S.L.balances[x.id] || 0), 0), net = accs.reduce((s, x) => s + valueOf(x), 0);
+    return { h: `可以用的錢 ${fmt(avail)}。`, sub: `淨資產 ${fmt(net)}（理財以市值計）。`, rows: accs.map(x => ({ w: esc(x.name), s: esc(x.type), a: fmt(valueOf(x)) })), go: 'money' };
+  }
+  return { h: '這個我還不會回答。', sub: '我現在會回答這些：', rows: examples().slice(0, 4).map(x => ({ w: esc(x) })) };
+}
+function showAnswer(text, a) {
+  draft = null; msg.value = ''; $('#chips').innerHTML = ''; items = [];
+  const [x, y] = heart(); drop(x, y, 160); orb.burst = .8;   // 回答時球亮一下
+  openSheet('緋的回答', `<p class="quote" style="margin:0">「${esc(text)}」</p><h2>${a.h}</h2>${a.sub ? `<p class="quote">${a.sub}</p>` : ''}
+    ${a.rows && a.rows.length ? `<div class="rows">${a.rows.map(r => `<div class="crow"><span><span class="w">${r.w}</span>${r.s ? `<span class="s">${r.s}</span>` : ''}</span><span class="a">${r.a || ''}</span></div>`).join('')}</div>` : ''}`,
+    `<button type="button" class="btn text" data-act="ask">再問一句</button>${a.go ? `<button type="button" class="btn ghost" data-go="${a.go}">${a.go === 'money' ? '打開錢' : '打開工作'}</button>` : ''}<button type="button" class="btn pri grow" data-act="ok">好</button>`);
+}
+
+/* ================= 跟她說對帳：「玉山剩 45800」「現金還有 2000」「玉山卡未繳 5300」 =================
+   跟記帳 App 的對帳一樣：差額預設記成「對帳調整」（不算花費、不影響預算與統計），也可以改成忘了記的花費（收入）並選分類。 */
+function reconcileIntent(t) {
+  if (!/剩|還有|餘額|只有|現在有|實際|對帳|未繳/.test(t)) return null;
+  const a = acctIn(t), nums = [...t.matchAll(/(\d[\d,]*)/g)];
+  if (!a || !nums.length) return null;
+  const n = Number(nums[nums.length - 1][1].replace(/,/g, ''));
+  return { acct: a, real: a.type === '信用卡' ? -Math.abs(n) : n };
+}
+let REC = null;
+function confirmReconcile(text, r) {
+  const a = r.acct, book = S.L.balances[a.id] || 0, d = Math.round(r.real - book), card = a.type === '信用卡';
+  if (!d) { showAnswer(text, { h: `${esc(a.name)}的帳是對的。`, sub: `帳上也是${card ? '未繳 ' + fmt(-book) : ' ' + fmt(book)}，不用調整。` }); return; }
+  REC = { text, a, d, mode: 'fix', catId: '' }; msg.value = ''; $('#chips').innerHTML = ''; items = [];
+  drawRec();
+}
+function drawRec() {
+  const { a, d } = REC, card = a.type === '信用卡', book = S.L.balances[a.id] || 0, kind = d < 0 ? '支出' : '收入';
+  const show = v => card ? '未繳 ' + fmt(-v) : fmt(v);
+  openSheet('對帳', `<h2>對帳：${esc(a.name)}</h2><p class="quote">「${esc(REC.text)}」</p>
+    <div class="rows"><div class="crow"><span><span class="k">帳上</span><span class="w num">${show(book)}</span></span><span></span></div>
+      <div class="crow"><span><span class="k">實際</span><span class="w num">${show(book + d)}</span><span class="s">${d < 0 ? '帳上多了，可能有花費沒記' : '帳上少了，可能有收入沒記'}</span></span><span class="a">${d < 0 ? '−' : '+'}${fmt(Math.abs(d))}</span></div></div>
+    <div class="field"><span>差額怎麼記</span><div class="pills"><button type="button" data-act="recMode" data-v="fix" aria-pressed="${REC.mode === 'fix'}">只校正餘額</button><button type="button" data-act="recMode" data-v="spend" aria-pressed="${REC.mode === 'spend'}">是忘了記的${kind === '收入' ? '收入' : '花費'}</button></div></div>
+    ${REC.mode === 'spend' ? `<div class="field"><span>記在哪一類</span>${LG.groupsOf([kind]).map(g => `<div class="pills"><span class="g soft" style="font-size:12px;align-self:center;min-width:4.5em">${esc(g)}</span>${LG.activeCats([kind]).filter(c => c.group === g).map(c => `<button type="button" data-act="recCat" data-v="${esc(c.id)}" aria-pressed="${REC.catId === c.id}">${esc(c.name)}</button>`).join('')}</div>`).join('')}</div>`
+      : '<p class="quote">補一筆「對帳調整」，不算花費、不影響預算和統計；記帳的明細裡看得到，刪掉那筆就還原。</p>'}`,
+    `<button type="button" class="btn text" data-act="recCancel">取消</button><button type="button" class="btn pri grow" data-act="recSave" ${REC.mode === 'spend' && !REC.catId ? 'disabled' : ''}>對好了</button>`);
+}
+async function commitRec() {
+  const { a, d } = REC, type = d < 0 ? '支出' : '收入'; let categoryId = REC.catId; REC = null; closeSheet(); mode = 'think';
+  try {
+    if (!categoryId) {
+      let c = LG.adjCat();
+      if (!c) { const res = await call('api_saveCategory', { kind: '轉帳', group: '轉帳', name: LG.ADJ }); S.L.categories = res.categories; c = LG.adjCat(); }
+      categoryId = c.id;
+    }
+    const t = { id: newId(), time: Date.now(), type, amount: Math.abs(d), categoryId, from: type === '支出' ? a.id : '', to: type === '收入' ? a.id : '', note: categoryId === (LG.adjCat() || {}).id ? LG.ADJ : '對帳：忘了記', void: false, created: Date.now() };
+    await call('api_saveTx', t, null);
+    toast(`已對帳：${a.name}${d < 0 ? '少' : '多'} ${fmt(Math.abs(d))}。`, true, [{ t: 'tx', id: t.id }]);
+  } catch (e) { toast('沒對成：' + errMsg(e), false); }
+  mode = 'breath'; refresh();
+}
+function confirmTalk(text, its) {
+  draft = { text, items: its };
+  const d = new Date(), work = isWork(d), need = its.find(x => x.t === 'tx' && (!x.p.categoryId || !x.p.from && x.p.type !== '收入'));
+  const groups = [...new Set(LG.activeCats(['支出']).map(c => c.group))];
+  const rows = its.map((x, i) => x.t === 'tx'
+    ? `<div class="crow"><span><span class="k">記帳</span><span class="w">${esc(x.p.note || x.text)}</span><span class="s">${esc(catName(x.p.categoryId))}・${esc((LG.acc(x.p.from || x.p.to) || {}).name || '還沒選帳戶')}${x.p.explicitDate ? '・' + esc(stamp(new Date(x.p.time)).slice(5, 10).replace('-', '/')) : ''}</span></span><span class="a">${x.p.type === '收入' ? '+' : '−'}${fmt(x.p.amount).replace('−', '')}</span>
+        ${x === need && !x.p.categoryId ? `<div class="pick"><span class="s">要記在哪一類？</span>${groups.map(g => `<div class="pills"><span class="g">${esc(g)}</span>${LG.activeCats(['支出']).filter(c => c.group === g).map(c => `<button type="button" data-act="pickCat" data-i="${i}" data-v="${esc(c.id)}">${esc(c.name)}</button>`).join('')}</div>`).join('')}</div>` : ''}</div>`
+    : x.t === 'log' ? `<div class="crow"><span><span class="k">工作日誌</span><span class="w">${esc(x.text)}</span><span class="s">${x.who ? `接到 ${esc(x.who)}` : '先分成日誌，排程會再整理'}${!work ? `・${nextWork(d)} 再提醒` : ''}</span></span><span></span></div>`
+    : `<div class="crow"><span><span class="k">先收著</span><span class="w">${esc(x.text)}</span><span class="s">生活開放前，先記在工作日誌</span></span><span></span></div>`).join('');
+  openSheet('確認要記的內容', `<h2>我這樣記，對嗎？</h2><p class="quote">「${esc(text)}」</p><div class="rows">${rows}</div><p class="quote" id="paused" aria-live="polite"></p>`,
+    `<button type="button" class="btn text" data-act="talkCancel">取消</button><button type="button" class="btn ghost" data-act="talkEdit">修改</button><button type="button" class="btn pri grow commit" data-act="talkCommit" ${need ? 'disabled' : ''}>好，記下來<span class="cdl" aria-hidden="true"></span></button>`);
+  if (!need) startCd();
+  $('#layer .pbody').addEventListener('pointerdown', e => { if (cd && !e.target.closest('.btn')) { cd.paused = true; $('#paused').textContent = '先停著，確認好再按「好，記下來」。'; } });
+}
+function startCd() {
+  stopCd(); cd = { el: 0, last: performance.now(), paused: false, sec: 0 };
+  cd.iv = setInterval(() => { if (!cd) return; const t = performance.now(); if (!cd.paused && !document.hidden) cd.el += t - cd.last; cd.last = t;
+    const p = Math.min(1, cd.el / 5000), pn = $('#layer .panel'); if (pn) pn.style.setProperty('--p', p.toFixed(3));
+    const s = Math.floor(cd.el / 1000); if (s > cd.sec && s < 5) { cd.sec = s; const [x, y] = heart(); drop(x, y, 90); }
+    if (p >= 1) { stopCd(); commitTalk(); } }, 40);
+}
+function stopCd() { if (cd) clearInterval(cd.iv); cd = null; }
+const newId = () => 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+async function commitTalk() {
+  if (!draft) return; const its = draft.items; draft = null;
+  closeSheet(); msg.value = ''; $('#chips').innerHTML = ''; items = []; orb.burst = 1; mode = 'think';
+  const done = [], fail = [], tx = its.filter(x => x.t === 'tx'), rest = its.filter(x => x.t !== 'tx');
+  for (const x of tx) {
+    const p = x.p, t = { id: newId(), time: p.time, type: p.type, amount: p.amount, categoryId: p.categoryId, from: p.from, to: p.to, note: p.note, void: false, created: Date.now() };
+    const learn = p.keyword ? { keyword: p.keyword, categoryId: p.categoryId, accountId: p.type === '收入' ? p.to : p.from } : null;
+    try { await call('api_saveTx', t, learn); done.push({ t: 'tx', id: t.id }); } catch (e) { fail.push(`${p.note}：${errMsg(e)}`); }
+  }
+  if (rest.length) {
+    // 工作與其他的部分合成一則原始紀錄（跟在工作日誌裡快記一樣），伺服器當下粗分，排程再精分
+    const raw = rest.map(x => x.text).join('。'), when = stamp(new Date()), sendId = 'a' + Date.now().toString(36);
+    try { const st = await call('addRecord', sendId, raw, when); const r = (st.records || []).find(r => r.raw === raw && r.time === when); if (r) done.push({ t: 'rec', id: r.id }); }
+    catch (e) { fail.push(`工作日誌：${errMsg(e)}`); }
+  }
+  mode = 'breath';
+  const bits = [];
+  if (tx.length) bits.push(`${tx.map(x => x.p.note).join('、')}記進帳本`);
+  if (rest.some(x => x.t === 'log')) bits.push(`${rest.filter(x => x.t === 'log').length} 件記進工作日誌`);
+  if (rest.some(x => x.t === 'memo')) bits.push('其他的先收在工作日誌');
+  toast(fail.length ? `有 ${fail.length} 項沒記到：${fail.join('；')}` : `好，${bits.join('；')}。`, !!done.length && !fail.length, done);
+  refresh();
+}
+async function undo(done) {
+  try {
+    for (const x of done) { if (x.t === 'tx') await call('api_deleteTx', x.id); else await call('deleteRecord', x.id); }
+    toast('復原了。', false); refresh();
+  } catch (e) { toast('沒復原成功：' + errMsg(e), false); }
+}
+
+/* ================= 面板、回話 ================= */
+function openSheet(label, body, acts) {
+  $('#layer').innerHTML = `<div class="scrim" data-act="close"></div><div class="sheet"><div class="panel" role="dialog" aria-modal="true" aria-label="${esc(label)}"><div class="grab" aria-hidden="true"></div><div class="pbody">${body}</div><div class="pacts">${acts}</div></div></div>`;
+  const f = $('#layer textarea, #layer input') || $('#layer .pacts .btn:last-child'); f && f.focus({ preventScroll: true });
+  dragToClose($('#layer .panel'));
+}
+// 手機：在把手或內容頂端往下拖，超過 90px（或甩得夠快）就關；不夠就彈回去。還沒配對時不能關
+function dragToClose(p) {
+  if (!p || deskMQ.matches) return;
+  let y0 = null, dy = 0, t0 = 0;
+  p.addEventListener('pointerdown', e => {
+    const body = $('.pbody', p);
+    if (e.pointerType === 'mouse' || e.target.closest('button,input,textarea') || (!e.target.closest('.grab') && body.scrollTop > 0)) return;
+    y0 = e.clientY; dy = 0; t0 = performance.now(); p.style.transition = 'none';
+  });
+  p.addEventListener('pointermove', e => { if (y0 == null) return; dy = Math.max(0, e.clientY - y0); if (dy > 4) { p.style.transform = `translateY(${dy}px)`; e.preventDefault(); } });
+  const end = () => {
+    if (y0 == null) return; const v = dy / Math.max(1, performance.now() - t0); y0 = null;
+    p.style.transition = 'transform 260ms cubic-bezier(.4,0,.2,1)';
+    if ((dy > 90 || v > .6) && store.get(K_KEY)) { p.style.transform = 'translateY(110%)'; draft = null; REC = null; stopCd(); setTimeout(() => { $('#layer').innerHTML = ''; }, 240); }
+    else p.style.transform = '';
+  };
+  p.addEventListener('pointerup', end); p.addEventListener('pointercancel', end);
+}
+function closeSheet() {
+  stopCd(); const p = $('#layer .panel'); if (!p) return;
+  if (reduce.matches) { $('#layer').innerHTML = ''; return; }
+  p.classList.add('out'); setTimeout(() => { if ($('#layer .panel.out')) $('#layer').innerHTML = ''; }, 180);
+}
+let toastT, undoList = null;
+function toast(text, canUndo, done) {
+  clearTimeout(toastT); undoList = canUndo ? done : null;
+  $('#toastSlot').innerHTML = `<div class="toast" role="status"><span>${esc(text)}</span>${canUndo ? '<button type="button" class="btn" data-act="undo">復原</button>' : ''}</div>`;
+  toastT = setTimeout(() => { const t = $('#toastSlot .toast'); if (!t) return; t.classList.add('out'); setTimeout(() => { $('#toastSlot').innerHTML = ''; undoList = null; }, 300); }, canUndo ? 6000 : 3200);
+}
+
+/* ================= 事件 ================= */
+const ACT = {
+  close: () => { if (store.get(K_KEY)) { draft = null; closeSheet(); } },
+  leave: () => leaveRoom(),
+  tipNo: () => { S.tip = 'gone'; renderHall(false); },
+  pushOn: () => pushOn(),
+  undo: () => { const d = undoList; if (!d) return; undoList = null; $('#toastSlot').innerHTML = ''; undo(d); },
+  talkCancel: () => { draft = null; closeSheet(); },
+  talkEdit: () => { draft = null; closeSheet(); msg.focus(); },
+  talkCommit: () => { stopCd(); commitTalk(); },
+  ok: () => closeSheet(),
+  ask: () => { closeSheet(); setTimeout(() => msg.focus(), 200); },
+  recMode: b => { REC.mode = b.dataset.v; if (REC.mode === 'fix') REC.catId = ''; drawRec(); },
+  recCat: b => { REC.catId = b.dataset.v; drawRec(); },
+  recCancel: () => { REC = null; closeSheet(); },
+  recSave: () => commitRec(),
+  pickCat: b => { const x = draft.items[+b.dataset.i]; x.p.categoryId = b.dataset.v; const c = LG.cat(b.dataset.v); if (c) x.p.type = c.kind === '收入' ? '收入' : '支出'; confirmTalk(draft.text, draft.items); },
+  keySave: () => { const v = ($('#keyIn').value || '').trim(); if (!v) { $('#keyIn').focus(); return; } store.set(K_KEY, v); closeSheet(); start(); },
+};
+document.addEventListener('click', e => {
+  const go = e.target.closest('[data-go]'); if (go) { enterRoom(go.dataset.go, go); return; }
+  const tr = e.target.closest('[data-try]'); if (tr) { msg.value = tr.textContent; renderChips(); msg.focus(); return; }
+  const a = e.target.closest('[data-act]'); if (a && ACT[a.dataset.act]) ACT[a.dataset.act](a, e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if ($('#layer .panel') && store.get(K_KEY)) { draft = null; closeSheet(); } else if (S.room) leaveRoom(); }
+});
+
+/* ================= 開始 ================= */
+async function start() {
+  takeKeyFromUrl();
+  try { const c = store.get(K_CACHE); if (c) { load(JSON.parse(c)); renderHall(true); } } catch (e) { /* 快取壞了就重抓 */ }
+  if (!store.get(K_KEY)) { keyScreen(); return; }
+  if (!S.L) $('#voice').innerHTML = '<p class="surface" style="animation-delay:500ms">我看一下今天。</p>';
+  try { load(await call('assistant_bootstrap')); renderHall(!S.room && !$('#voice h1 + p')); }
+  catch (e) { if (isAuth(e)) keyScreen('金鑰不對，請重新貼上。'); else if (!S.L) $('#voice').innerHTML = '<h1>連不上資料服務。</h1><p>確認網路後再打開一次。</p>'; else toast('目前離線，顯示上次的資料。', false); }
+  const k0 = location.hash.slice(1); if (ROOMS[k0]) enterRoom(k0);
+  handleSay();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.L && !S.room) refresh(); });
+if ('serviceWorker' in navigator && !/localhost|127\.0\.0\.1/.test(location.hostname)) navigator.serviceWorker.register('sw.js');
+start();
+})();
+</script>
+</body>
+</html>
